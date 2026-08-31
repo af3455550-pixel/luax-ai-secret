@@ -1,0 +1,49 @@
+{
+    "SceneName": "Sanctuary_Level_01",
+    "Environment": {
+        "Skybox": "Engine/Textures/Skybox_Cathedral.hdr",
+        "SunLight": {
+            "Direction": [-0.5, -0.8, 0.3],
+            "Color": [1.0, 0.95, 0.8],
+            "Intensity": 50.0,
+            "CastShadows": true
+        },
+        "Fog": {
+            "Enabled": true,
+            "Density": 0.002,
+            "Color": [0.7, 0.8, 0.9]
+        }
+    },
+    "Entities": [
+        {
+            "Name": "Temple_Floor",
+            "Transform": {
+                "Position": [0.0, 0.0, 0.0],
+                "Rotation": [0.0, 0.0, 0.0, 1.0],
+                "Scale": [50.0, 1.0, 50.0]
+            },
+            "Mesh": "Engine/Meshes/Floor_Tile.obj",
+            "Material": "Engine/Materials/Sanctuary_Stone.mat",
+            "Collider": {
+                "Type": "Box",
+                "Size": [50.0, 1.0, 50.0]
+            }
+        },
+        {
+            "Name": "Hero_Player",
+            "Transform": {
+                "Position": [0.0, 2.0, 0.0],
+                "Rotation": [0.0, 0.0, 0.0, 1.0],
+                "Scale": [1.0, 1.0, 1.0]
+            },
+            "Mesh": "Engine/Meshes/Character_Knight.gltf",
+            "Material": "Engine/Materials/Sanctuary_Gold.mat",
+            "RigidBody": {
+                "Mass": 75.0,
+                "UseGravity": true,
+                "Kinematic": false
+            },
+            "Script": "Engine/Assets/Scripts/PlayerController.lua"
+        }
+    ]
+}
