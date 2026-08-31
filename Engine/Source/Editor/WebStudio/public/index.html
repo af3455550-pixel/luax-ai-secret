@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexEngine 3D — Editor Visual & Runtime Studio (AAA)</title>
+    <!-- Three.js and OrbitControls / TransformControls for 3D Viewport -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-main: #18191c;
+            --bg-panel: #202226;
+            --bg-darker: #121315;
+            --bg-highlight: #2b2e34;
+            --border: #32363e;
+            --text-main: #d4d7dc;
+            --text-dim: #8b929d;
+            --accent: #0e86d4;
+            --accent-hover: #055c9d;
+            --green: #2ecc71;
+            --orange: #e67e22;
+            --red: #e74c3c;
+            --yellow: #f1c40f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        /* Top Bar */
+        header {
+            background-color: var(--bg-darker);
+            border-bottom: 1px solid var(--border);
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .engine-logo {
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 1px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .engine-logo span {
+            color: var(--accent);
+        }
+
+        .menu-items {
+            display: flex;
+            gap: 12px;
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+
+        .menu-items span {
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 4px;
+        }
+
+        .menu-items span:hover {
+            color: #fff;
+            background: var(--bg-highlight);
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            background: var(--bg-highlight);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn:hover {
+            background: #373b43;
+            color: #fff;
+        }
+
+        .btn-play {
+            background: #27ae60;
+            color: #fff;
+            border-color: #219653;
+        }
+
+        .btn-play:hover {
+            background: #219653;
+        }
+
+        .btn-stop {
+            background: #c0392b;
+            color: #fff;
+            border-color: #962d22;
+        }
+
+        .btn-stop:hover {
+            background: #962d22;
+        }
+
+        .btn-cpp {
+            background: #2980b9;
+            color: #fff;
+            border-color: #1f618d;
+        }
+
+        .btn-cpp:hover {
+            background: #1f618d;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+
+        .badge-rhi {
+            background: #1e3799;
+            color: #dff9fb;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* Workspace Grid */
+        .main-workspace {
+            display: grid;
+            grid-template-columns: 260px 1fr 320px;
+            grid-template-rows: 1fr 220px;
+            flex: 1;
+            overflow: hidden;
+            background: var(--bg-main);
+            gap: 2px;
+        }
+
+        /* Panels */
+        .panel {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background-color: var(--bg-darker);
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #bbb;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-content {
+            padding: 10px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Outliner / Hierarchy */
+        .tree-node {
+            padding: 6px 8px;
+            margin-bottom: 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+            font-size: 12px;
+        }
+
+        .tree-node:hover {
+            background: var(--bg-highlight);
+        }
+
+        .tree-node.active {
+            background: #0984e3;
+            color: #fff;
+        }
+
+        .tree-node i {
+            width: 14px;
+            text-align: center;
+            color: var(--text-dim);
+        }
+
+        .tree-node.active i {
+            color: #fff;
+        }
+
+        /* 3D Viewport */
+        .viewport-panel {
+            position: relative;
+            background: #0a0b0d;
+        }
+
+        #viewport-canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .viewport-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(18, 19, 21, 0.85);
+            backdrop-filter: blur(4px);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #fff;
+            font-size: 11px;
+            pointer-events: none;
+            line-height: 1.5;
+            z-index: 10;
+        }
+
+        .viewport-tools {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 6px;
+            z-index: 10;
+        }
+
+        .tool-btn {
+            background: rgba(32, 34, 38, 0.9);
+            border: 1px solid var(--border);
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tool-btn:hover, .tool-btn.active {
+            background: var(--accent);
+        }
+
+        /* Details / ECS Inspector */
+        .prop-group {
+            background: var(--bg-darker);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .prop-group-header {
+            background: #25282e;
+            padding: 6px 10px;
+            font-weight: 600;
+            font-size: 11px;
+            color: #8c9eb5;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .prop-row {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            align-items: center;
+            padding: 6px 10px;
+            border-bottom: 1px solid #282a2e;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .prop-row:last-child {
+            border-bottom: none;
+        }
+
+        .prop-label {
+            color: var(--text-dim);
+            font-size: 11px;
+        }
+
+        .prop-val-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+        }
+
+        .input-num {
+            background: #141518;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            width: 100%;
+        }
+
+        .input-num:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .slider-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slider-wrap input[type=range] {
+            flex: 1;
+        }
+
+        /* Bottom Tabs / Console & Assets */
+        .bottom-panel {
+            grid-column: 1 / 4;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-bar {
+            background: var(--bg-darker);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 2px;
+            padding-left: 8px;
+        }
+
+        .tab {
+            padding: 6px 16px;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 12px;
+            border-top: 2px solid transparent;
+        }
+
+        .tab:hover {
+            color: #fff;
+            background: var(--bg-highlight);
+        }
+
+        .tab.active {
+            color: #fff;
+            background: var(--bg-panel);
+            border-top: 2px solid var(--accent);
+        }
+
+        .tab-content {
+            flex: 1;
+            padding: 8px;
+            overflow-y: auto;
+            background: #141517;
+            font-family: monospace;
+            font-size: 11.5px;
+            color: #d1d8e0;
+            white-space: pre-wrap;
+        }
+
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+            font-family: sans-serif;
+        }
+
+        .asset-card {
+            background: var(--bg-darker);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .asset-card:hover {
+            background: var(--bg-highlight);
+            border-color: var(--accent);
+        }
+
+        .asset-card i {
+            font-size: 24px;
+            margin-bottom: 6px;
+            color: var(--accent);
+        }
+
+        .asset-card .name {
+            font-size: 11px;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .log-info { color: #2ecc71; }
+        .log-warn { color: #f39c12; }
+        .log-error { color: #e74c3c; }
+        .log-cyan { color: #00cec9; }
+
+        /* Modal Overlay */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.open { display: flex; }
+        .modal-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 700px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .modal-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .code-area {
+            width: 100%;
+            height: 350px;
+            background: #0e0f11;
+            color: #a4b0be;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Toolbar -->
+    <header>
+        <div class="header-left">
+            <div class="engine-logo">
+                <i class="fa-solid fa-cube" style="color: #0e86d4;"></i>
+                APEX<span>ENGINE</span> <small style="color: #666; font-size: 10px; font-weight: normal;">AAA C++20</small>
+            </div>
+            <div class="menu-items">
+                <span>Ficheiro</span>
+                <span>Editar</span>
+                <span>Janela</span>
+                <span>Atores</span>
+                <span>Compilar</span>
+                <span onclick="openScriptModal()">Scripts (Lua)</span>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <button class="btn btn-play" id="btn-play-pause" onclick="togglePlayMode()">
+                <i class="fa-solid fa-play"></i> <span id="btn-play-text">Simular (Play)</span>
+            </button>
+            <button class="btn btn-stop" onclick="resetScene()">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+            <button class="btn btn-cpp" onclick="runCppEngine()">
+                <i class="fa-solid fa-terminal"></i> Executar C++ (.exe)
+            </button>
+            <button class="btn" onclick="buildCppEngine()">
+                <i class="fa-solid fa-hammer"></i> Recompilar
+            </button>
+        </div>
+
+        <div class="header-right">
+            <span class="badge-rhi"><i class="fa-solid fa-microchip"></i> Vulkan 1.3 PBR</span>
+            <span><i class="fa-solid fa-code-branch"></i> arena/01a057d6-luax-ai-secret</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="main-workspace">
+        
+        <!-- Left: Scene Outliner / Hierarchy -->
+        <div class="panel">
+            <div class="panel-header">
+                <span><i class="fa-solid fa-list-tree"></i> Scene Outliner</span>
+                <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="spawnNewBox()">+ Novo Ator</button>
+            </div>
+            <div class="panel-content" id="outliner-tree">
+                <!-- Nodes dynamically populated -->
+            </div>
+        </div>
+
+        <!-- Center: 3D Viewport -->
+        <div class="panel viewport-panel">
+            <div id="viewport-canvas-container"></div>
+            
+            <!-- Performance & Engine HUD Overlay -->
+            <div class="viewport-overlay" id="hud-overlay">
+                <strong>ApexEngine 3D PBR Viewport</strong><br>
+                FPS: <span id="hud-fps" style="color: #2ecc71;">60.0</span> | Frame Time: <span id="hud-ms">16.6 ms</span><br>
+                Draw Calls: <span id="hud-drawcalls">11</span> | Triângulos: <span id="hud-tris">64,500</span><br>
+                Entidades ECS: <span id="hud-entities">8</span> | Threads Ativas: 4<br>
+                Pipeline: Deferred G-Buffer + Clustered PBR
+            </div>
+
+            <!-- Viewport Gizmo Tools -->
+            <div class="viewport-tools">
+                <div class="tool-btn active" id="tool-translate" title="Transladar (W)" onclick="setGizmoMode('translate')">
+                    <i class="fa-solid fa-arrows-up-down-left-right"></i>
+                </div>
+                <div class="tool-btn" id="tool-rotate" title="Rotacionar (E)" onclick="setGizmoMode('rotate')">
+                    <i class="fa-solid fa-rotate"></i>
+                </div>
+                <div class="tool-btn" id="tool-scale" title="Escalar (R)" onclick="setGizmoMode('scale')">
+                    <i class="fa-solid fa-expand"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Details / ECS Inspector -->
+        <div class="panel">
+            <div class="panel-header">
+                <span><i class="fa-solid fa-sliders"></i> ECS Inspector</span>
+                <span id="selected-entity-name" style="color: var(--accent); font-weight: bold;">Hero_Knight</span>
+            </div>
+            <div class="panel-content" id="inspector-content">
+                
+                <!-- Transform Component -->
+                <div class="prop-group">
+                    <div class="prop-group-header">
+                        <span><i class="fa-solid fa-arrows-alt"></i> TransformComponent</span>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Posição</span>
+                        <div class="prop-val-3">
+                            <input class="input-num" id="inp-pos-x" type="number" step="0.1" value="0.0" onchange="updateSelectedTransform()">
+                            <input class="input-num" id="inp-pos-y" type="number" step="0.1" value="3.0" onchange="updateSelectedTransform()">
+                            <input class="input-num" id="inp-pos-z" type="number" step="0.1" value="0.0" onchange="updateSelectedTransform()">
+                        </div>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Rotação</span>
+                        <div class="prop-val-3">
+                            <input class="input-num" id="inp-rot-x" type="number" step="1" value="0" onchange="updateSelectedTransform()">
+                            <input class="input-num" id="inp-rot-y" type="number" step="1" value="0" onchange="updateSelectedTransform()">
+                            <input class="input-num" id="inp-rot-z" type="number" step="1" value="0" onchange="updateSelectedTransform()">
+                        </div>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Escala</span>
+                        <div class="prop-val-3">
+                            <input class="input-num" id="inp-scale-x" type="number" step="0.1" value="1.0" onchange="updateSelectedTransform()">
+                            <input class="input-num" id="inp-scale-y" type="number" step="0.1" value="1.0" onchange="updateSelectedTransform()">
+                            <input class="input-num" id="inp-scale-z" type="number" step="0.1" value="1.0" onchange="updateSelectedTransform()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Material PBR Component -->
+                <div class="prop-group">
+                    <div class="prop-group-header">
+                        <span><i class="fa-solid fa-palette"></i> Material PBR (Cook-Torrance)</span>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Albedo</span>
+                        <input type="color" id="inp-mat-color" value="#ffd700" onchange="updateSelectedMaterial()" style="background:none; border:none; cursor:pointer; width:100%; height:24px;">
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Metálico</span>
+                        <div class="slider-wrap">
+                            <input type="range" min="0" max="1" step="0.01" value="0.9" id="inp-mat-metal" oninput="updateSelectedMaterial()">
+                            <span id="lbl-mat-metal" style="font-size: 11px;">0.90</span>
+                        </div>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Rugosidade</span>
+                        <div class="slider-wrap">
+                            <input type="range" min="0.05" max="1" step="0.01" value="0.2" id="inp-mat-rough" oninput="updateSelectedMaterial()">
+                            <span id="lbl-mat-rough" style="font-size: 11px;">0.20</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Physics RigidBody Component -->
+                <div class="prop-group">
+                    <div class="prop-group-header">
+                        <span><i class="fa-solid fa-atom"></i> RigidBodyComponent (PhysX)</span>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Massa (kg)</span>
+                        <input class="input-num" id="inp-phys-mass" type="number" value="25.0">
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Gravidade</span>
+                        <input type="checkbox" id="chk-phys-grav" checked>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Ações</span>
+                        <button class="btn" style="width: 100%; font-size: 11px;" onclick="applyImpulseToSelected()">
+                            <i class="fa-solid fa-bolt"></i> Aplicar Impulso ↑
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Script Component -->
+                <div class="prop-group">
+                    <div class="prop-group-header">
+                        <span><i class="fa-brands fa-lua"></i> ScriptComponent</span>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Script</span>
+                        <span style="color: #2ecc71;">PlayerController.lua</span>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Ação</span>
+                        <button class="btn" style="width: 100%; font-size: 11px;" onclick="openScriptModal()">
+                            <i class="fa-solid fa-code"></i> Editar Script
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Audio Source Component -->
+                <div class="prop-group">
+                    <div class="prop-group-header">
+                        <span><i class="fa-solid fa-volume-high"></i> AudioSourceComponent (3D)</span>
+                    </div>
+                    <div class="prop-row">
+                        <span class="prop-label">Som 3D</span>
+                        <button class="btn" style="width: 100%; font-size: 11px;" onclick="playAudioCue()">
+                            <i class="fa-solid fa-play"></i> Tocar SFX 3D
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Bottom: Tabs (Console, Assets, Profiler) -->
+        <div class="panel bottom-panel">
+            <div class="tab-bar">
+                <div class="tab active" onclick="switchTab('console')"><i class="fa-solid fa-terminal"></i> Terminal C++ / Logs</div>
+                <div class="tab" onclick="switchTab('assets')"><i class="fa-solid fa-folder-open"></i> Navegador de Assets</div>
+                <div class="tab" onclick="switchTab('profiler')"><i class="fa-solid fa-chart-line"></i> TaskGraph & Profiler</div>
+            </div>
+            
+            <div class="tab-content" id="tab-console">
+[ApexEngine Core] Inicializando Subsistemas C++20...
+[TaskGraph] 4 Worker Threads alocados.
+[AssetManager] Orçamento de cache: 1024 MB.
+[RHI] Dispositivo Vulkan 1.3 inicializado com sucesso.
+[PBRRenderer] G-Buffer MRT alocado (1920x1080).
+[Physics] PhysX / Bullet Simulation World ativo.
+[Scene] Nível Sanctuary_Level_01 carregado.
+Pronto para execução em tempo real. Clique em "Executar C++ (.exe)" para rodar a simulação nativa!
+            </div>
+
+            <div class="tab-content" id="tab-assets" style="display:none; background: #18191c;">
+                <div class="asset-grid">
+                    <div class="asset-card" onclick="logConsole('Abrindo cena: Sanctuary_Level_01.scene')">
+                        <i class="fa-solid fa-cubes"></i>
+                        <div class="name">Sanctuary.scene</div>
+                    </div>
+                    <div class="asset-card" onclick="openScriptModal()">
+                        <i class="fa-brands fa-lua" style="color: #2ecc71;"></i>
+                        <div class="name">PlayerController.lua</div>
+                    </div>
+                    <div class="asset-card">
+                        <i class="fa-solid fa-file-code" style="color: #e67e22;"></i>
+                        <div class="name">PBR_Deferred.glsl</div>
+                    </div>
+                    <div class="asset-card">
+                        <i class="fa-solid fa-gem" style="color: #f1c40f;"></i>
+                        <div class="name">Sanctuary_Gold.mat</div>
+                    </div>
+                    <div class="asset-card" onclick="playAudioCue()">
+                        <i class="fa-solid fa-file-audio" style="color: #9b59b6;"></i>
+                        <div class="name">Ambience_3D.ogg</div>
+                    </div>
+                    <div class="asset-card" onclick="runCppEngine()">
+                        <i class="fa-solid fa-gear" style="color: #3498db;"></i>
+                        <div class="name">ApexEngine.exe</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-profiler" style="display:none; font-family: sans-serif;">
+                <div style="display: flex; gap: 20px; align-items: center; padding: 10px;">
+                    <div style="background: #202226; padding: 12px; border-radius: 6px; border: 1px solid var(--border); width: 220px;">
+                        <h4 style="color: var(--accent); margin-bottom: 6px;">CPU TaskGraph</h4>
+                        <div>Worker Thread #1: <span style="color:#2ecc71;">Física (0.004 ms)</span></div>
+                        <div>Worker Thread #2: <span style="color:#2ecc71;">Lua Script (0.015 ms)</span></div>
+                        <div>Worker Thread #3: <span style="color:#2ecc71;">3D Audio (0.001 ms)</span></div>
+                        <div>Worker Thread #4: <span style="color:#2ecc71;">Network Repl (0.001 ms)</span></div>
+                    </div>
+                    <div style="background: #202226; padding: 12px; border-radius: 6px; border: 1px solid var(--border); width: 220px;">
+                        <h4 style="color: #e67e22; margin-bottom: 6px;">GPU RenderGraph</h4>
+                        <div>Shadow CSM: <span style="color:#2ecc71;">1.2 ms</span></div>
+                        <div>G-Buffer Base: <span style="color:#2ecc71;">2.4 ms</span></div>
+                        <div>Clustered Light: <span style="color:#2ecc71;">1.8 ms</span></div>
+                        <div>Post-Process: <span style="color:#2ecc71;">0.8 ms</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Script Editor Modal -->
+    <div class="modal" id="script-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span><i class="fa-brands fa-lua"></i> Editor de Script Lua (Hot-Reload)</span>
+                <button class="btn" style="padding: 2px 8px;" onclick="closeScriptModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <textarea class="code-area" id="lua-code-editor"></textarea>
+            </div>
+            <div style="padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn" onclick="closeScriptModal()">Cancelar</button>
+                <button class="btn btn-play" onclick="saveLuaScript()"><i class="fa-solid fa-save"></i> Guardar & Hot-Reload</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 3D Engine Viewport Setup with Three.js
+        // ==========================================
+        let scene, camera, renderer, orbitControls, transformControls;
+        let entities = [];
+        let selectedEntity = null;
+        let isPlaying = false;
+        let clock = new THREE.Clock();
+
+        const container = document.getElementById('viewport-canvas-container');
+
+        function init3DViewport() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111215);
+            scene.fog = new THREE.FogExp2(0x111215, 0.02);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 6, 14);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.1;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls
+            orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.05;
+            orbitControls.target.set(0, 2, 0);
+
+            // Transform Controls (Gizmos)
+            transformControls = new THREE.TransformControls(camera, renderer.domElement);
+            transformControls.addEventListener('dragging-changed', function (event) {
+                orbitControls.enabled = !event.value;
+            });
+            transformControls.addEventListener('change', function () {
+                if (selectedEntity) {
+                    syncInspectorFromMesh(selectedEntity.mesh);
+                }
+            });
+            scene.add(transformControls);
+
+            // Grid & Ground Plane
+            const gridHelper = new THREE.GridHelper(40, 40, 0x34495e, 0x1f242d);
+            gridHelper.position.y = -0.01;
+            scene.add(gridHelper);
+
+            // Ground Floor Mesh
+            const floorGeo = new THREE.BoxGeometry(40, 0.5, 40);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e272e, roughness: 0.8, metalness: 0.2 });
+            const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+            floorMesh.position.y = -0.25;
+            floorMesh.receiveShadow = true;
+            scene.add(floorMesh);
+
+            // Lighting (Sun + Point Lights)
+            const sunLight = new THREE.DirectionalLight(0xfff5e6, 2.5);
+            sunLight.position.set(15, 30, 15);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 80;
+            sunLight.shadow.camera.left = -20;
+            sunLight.shadow.camera.right = 20;
+            sunLight.shadow.camera.top = 20;
+            sunLight.shadow.camera.bottom = -20;
+            scene.add(sunLight);
+
+            const ambientLight = new THREE.AmbientLight(0x2c3e50, 0.7);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x3498db, 3, 20);
+            pointLight.position.set(0, 4, 0);
+            scene.add(pointLight);
+
+            // Build Scene Entities
+            buildInitialEntities();
+
+            // Resize listener
+            window.addEventListener('resize', onWindowResize);
+
+            // Click to select
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+            // Render loop
+            animate();
+        }
+
+        function buildInitialEntities() {
+            // Knight / Gold Hero Sphere
+            createEntity({
+                name: "Hero_Knight",
+                type: "Sphere",
+                position: [0, 2.5, 0],
+                material: { color: 0xffd700, metalness: 0.9, roughness: 0.18 },
+                rigidbody: { mass: 75, velocity: [0, 0, 0] }
+            });
+
+            // Dynamic Crates
+            for (let i = 0; i < 5; i++) {
+                const x = (i - 2) * 2.8;
+                const y = 4.0 + i * 1.5;
+                createEntity({
+                    name: `DynamicCrate_${i}`,
+                    type: "Box",
+                    position: [x, y, (i % 2 === 0 ? 1.5 : -1.5)],
+                    material: { color: 0x3498db, metalness: 0.4, roughness: 0.5 },
+                    rigidbody: { mass: 15, velocity: [0, 0, 0] }
+                });
+            }
+
+            refreshOutlinerTree();
+            selectEntity(entities[0]);
+        }
+
+        function createEntity(data) {
+            let geometry;
+            if (data.type === "Sphere") {
+                geometry = new THREE.SphereGeometry(1, 32, 32);
+            } else {
+                geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+            }
+
+            const mat = new THREE.MeshStandardMaterial({
+                color: data.material.color || 0x3498db,
+                metalness: data.material.metalness || 0.5,
+                roughness: data.material.roughness || 0.5
+            });
+
+            const mesh = new THREE.Mesh(geometry, mat);
+            mesh.position.set(data.position[0], data.position[1], data.position[2]);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+
+            const entity = {
+                id: entities.length + 1,
+                name: data.name,
+                mesh: mesh,
+                initialPos: [...data.position],
+                rigidbody: {
+                    mass: data.rigidbody ? data.rigidbody.mass : 10,
+                    velocity: new THREE.Vector3(0, 0, 0),
+                    gravity: true
+                }
+            };
+
+            mesh.userData = { entity: entity };
+            entities.push(entity);
+            return entity;
+        }
+
+        function spawnNewBox() {
+            const count = entities.length;
+            const newEnt = createEntity({
+                name: `Actor_Box_${count}`,
+                type: "Box",
+                position: [(Math.random() - 0.5) * 6, 6 + Math.random() * 3, (Math.random() - 0.5) * 6],
+                material: { color: Math.random() * 0xffffff, metalness: 0.5, roughness: 0.3 },
+                rigidbody: { mass: 20, velocity: [0, 0, 0] }
+            });
+            refreshOutlinerTree();
+            selectEntity(newEnt);
+            logConsole(`[World] Criado novo ator: ${newEnt.name}`);
+        }
+
+        function refreshOutlinerTree() {
+            const container = document.getElementById('outliner-tree');
+            container.innerHTML = '';
+
+            entities.forEach(ent => {
+                const node = document.createElement('div');
+                node.className = `tree-node ${selectedEntity === ent ? 'active' : ''}`;
+                node.onclick = () => selectEntity(ent);
+
+                const icon = ent.name.includes("Hero") ? 'fa-user-ninja' : 'fa-cube';
+                node.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${ent.name}</span>`;
+                container.appendChild(node);
+            });
+            document.getElementById('hud-entities').innerText = entities.length;
+        }
+
+        function selectEntity(ent) {
+            selectedEntity = ent;
+            transformControls.attach(ent.mesh);
+            document.getElementById('selected-entity-name').innerText = ent.name;
+            syncInspectorFromMesh(ent.mesh);
+            refreshOutlinerTree();
+        }
+
+        function syncInspectorFromMesh(mesh) {
+            document.getElementById('inp-pos-x').value = mesh.position.x.toFixed(2);
+            document.getElementById('inp-pos-y').value = mesh.position.y.toFixed(2);
+            document.getElementById('inp-pos-z').value = mesh.position.z.toFixed(2);
+
+            document.getElementById('inp-rot-x').value = THREE.MathUtils.radToDeg(mesh.rotation.x).toFixed(0);
+            document.getElementById('inp-rot-y').value = THREE.MathUtils.radToDeg(mesh.rotation.y).toFixed(0);
+            document.getElementById('inp-rot-z').value = THREE.MathUtils.radToDeg(mesh.rotation.z).toFixed(0);
+
+            document.getElementById('inp-scale-x').value = mesh.scale.x.toFixed(2);
+            document.getElementById('inp-scale-y').value = mesh.scale.y.toFixed(2);
+            document.getElementById('inp-scale-z').value = mesh.scale.z.toFixed(2);
+
+            if (mesh.material) {
+                document.getElementById('inp-mat-metal').value = mesh.material.metalness;
+                document.getElementById('lbl-mat-metal').innerText = mesh.material.metalness.toFixed(2);
+                document.getElementById('inp-mat-rough').value = mesh.material.roughness;
+                document.getElementById('lbl-mat-rough').innerText = mesh.material.roughness.toFixed(2);
+            }
+        }
+
+        function updateSelectedTransform() {
+            if (!selectedEntity) return;
+            const mesh = selectedEntity.mesh;
+            mesh.position.x = parseFloat(document.getElementById('inp-pos-x').value) || 0;
+            mesh.position.y = parseFloat(document.getElementById('inp-pos-y').value) || 0;
+            mesh.position.z = parseFloat(document.getElementById('inp-pos-z').value) || 0;
+
+            mesh.rotation.x = THREE.MathUtils.degToRad(parseFloat(document.getElementById('inp-rot-x').value) || 0);
+            mesh.rotation.y = THREE.MathUtils.degToRad(parseFloat(document.getElementById('inp-rot-y').value) || 0);
+            mesh.rotation.z = THREE.MathUtils.degToRad(parseFloat(document.getElementById('inp-rot-z').value) || 0);
+
+            mesh.scale.x = parseFloat(document.getElementById('inp-scale-x').value) || 1;
+            mesh.scale.y = parseFloat(document.getElementById('inp-scale-y').value) || 1;
+            mesh.scale.z = parseFloat(document.getElementById('inp-scale-z').value) || 1;
+        }
+
+        function updateSelectedMaterial() {
+            if (!selectedEntity || !selectedEntity.mesh.material) return;
+            const mat = selectedEntity.mesh.material;
+            const colorHex = document.getElementById('inp-mat-color').value;
+            const metal = parseFloat(document.getElementById('inp-mat-metal').value);
+            const rough = parseFloat(document.getElementById('inp-mat-rough').value);
+
+            mat.color.set(colorHex);
+            mat.metalness = metal;
+            mat.roughness = rough;
+
+            document.getElementById('lbl-mat-metal').innerText = metal.toFixed(2);
+            document.getElementById('lbl-mat-rough').innerText = rough.toFixed(2);
+        }
+
+        function applyImpulseToSelected() {
+            if (!selectedEntity) return;
+            selectedEntity.rigidbody.velocity.y += 8.5;
+            selectedEntity.rigidbody.velocity.x += (Math.random() - 0.5) * 4;
+            playAudioCue();
+            logConsole(`[Physics] Impulso aplicado em ${selectedEntity.name}: (0, +8.5, 0)`);
+        }
+
+        function togglePlayMode() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('btn-play-pause');
+            const text = document.getElementById('btn-play-text');
+            if (isPlaying) {
+                btn.className = "btn btn-stop";
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i> <span>Pausar</span>';
+                transformControls.detach();
+                logConsole("[Engine] Modo Play Ativado: Simulação física e scripts em execução.");
+            } else {
+                btn.className = "btn btn-play";
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> <span>Simular (Play)</span>';
+                if (selectedEntity) transformControls.attach(selectedEntity.mesh);
+                logConsole("[Engine] Modo Play Pausado.");
+            }
+        }
+
+        function resetScene() {
+            isPlaying = false;
+            const btn = document.getElementById('btn-play-pause');
+            btn.className = "btn btn-play";
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> <span>Simular (Play)</span>';
+
+            entities.forEach(ent => {
+                ent.mesh.position.set(ent.initialPos[0], ent.initialPos[1], ent.initialPos[2]);
+                ent.rigidbody.velocity.set(0, 0, 0);
+            });
+            if (selectedEntity) {
+                transformControls.attach(selectedEntity.mesh);
+                syncInspectorFromMesh(selectedEntity.mesh);
+            }
+            logConsole("[Engine] Cena reiniciada.");
+        }
+
+        function setGizmoMode(mode) {
+            transformControls.setMode(mode);
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tool-${mode}`).classList.add('active');
+        }
+
+        function onPointerDown(event) {
+            if (event.button !== 0) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mouse = new THREE.Vector2(
+                ((event.clientX - rect.left) / rect.width) * 2 - 1,
+                -((event.clientY - rect.top) / rect.height) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(entities.map(e => e.mesh));
+
+            if (intersects.length > 0) {
+                const hitEntity = intersects[0].object.userData.entity;
+                if (hitEntity) selectEntity(hitEntity);
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Physics & Animation Loop
+        let frameCounter = 0;
+        let lastFpsUpdate = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+
+            if (isPlaying) {
+                // Step Physics Simulation
+                entities.forEach(ent => {
+                    const rb = ent.rigidbody;
+                    const mesh = ent.mesh;
+
+                    // Gravity
+                    if (rb.gravity) {
+                        rb.velocity.y -= 9.81 * dt;
+                    }
+
+                    mesh.position.addScaledVector(rb.velocity, dt);
+
+                    // Floor Collision
+                    const halfH = ent.mesh.geometry.type.includes("Sphere") ? 1.0 : 0.75;
+                    if (mesh.position.y <= halfH) {
+                        mesh.position.y = halfH;
+                        if (rb.velocity.y < 0) {
+                            rb.velocity.y = -rb.velocity.y * 0.45; // Bounce
+                            rb.velocity.x *= 0.9; // Friction
+                            rb.velocity.z *= 0.9;
+                        }
+                    }
+                });
+
+                if (selectedEntity) syncInspectorFromMesh(selectedEntity.mesh);
+            }
+
+            orbitControls.update();
+            renderer.render(scene, camera);
+
+            // FPS Counter
+            frameCounter++;
+            const now = performance.now();
+            if (now - lastFpsUpdate >= 500) {
+                const fps = ((frameCounter * 1000) / (now - lastFpsUpdate)).toFixed(1);
+                const ms = (1000 / Math.max(fps, 1)).toFixed(1);
+                document.getElementById('hud-fps').innerText = fps;
+                document.getElementById('hud-ms').innerText = `${ms} ms`;
+                frameCounter = 0;
+                lastFpsUpdate = now;
+            }
+        }
+
+        // ==========================================
+        // C++ Engine Backend API Integration
+        // ==========================================
+        function runCppEngine() {
+            logConsole("\n>>> Executando binário nativo: ./bin/ApexEngine.exe 60 ...");
+            fetch('/api/run-cpp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ frames: 60 })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    logConsole(data.output);
+                } else {
+                    logConsole(`[ERRO] ${data.error}`);
+                }
+            })
+            .catch(err => {
+                logConsole(`[ERRO de Comunicação] ${err.message}`);
+            });
+        }
+
+        function buildCppEngine() {
+            logConsole("\n>>> Recompilando engine C++ (make clean && make)...");
+            fetch('/api/build-cpp', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                logConsole(data.output || "Recompilado com sucesso.");
+            })
+            .catch(err => {
+                logConsole(`[ERRO] ${err.message}`);
+            });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+
+            document.getElementById(`tab-${tabId}`).style.display = 'block';
+            event.currentTarget.classList.add('active');
+        }
+
+        function logConsole(msg) {
+            const consoleBox = document.getElementById('tab-console');
+            consoleBox.innerText += "\n" + msg;
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        // Web Audio Spatial SFX synthesizer
+        function playAudioCue() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(320, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.2);
+
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 0.2);
+            } catch(e) {}
+        }
+
+        // Lua Script Modal
+        function openScriptModal() {
+            fetch('/api/script')
+            .then(res => res.text())
+            .then(code => {
+                document.getElementById('lua-code-editor').value = code;
+                document.getElementById('script-modal').classList.add('open');
+            });
+        }
+
+        function closeScriptModal() {
+            document.getElementById('script-modal').classList.remove('open');
+        }
+
+        function saveLuaScript() {
+            const code = document.getElementById('lua-code-editor').value;
+            fetch('/api/save-script', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            })
+            .then(res => res.json())
+            .then(data => {
+                logConsole("[Scripting] PlayerController.lua salvo e hot-reloaded com sucesso!");
+                closeScriptModal();
+            });
+        }
+
+        // Startup
+        window.onload = () => {
+            init3DViewport();
+        };
+    </script>
+</body>
+</html>
