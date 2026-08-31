@@ -5,6 +5,16 @@
 
 namespace Fireline {
 
+#ifdef PI
+#undef PI
+#endif
+#ifdef DEG2RAD
+#undef DEG2RAD
+#endif
+#ifdef RAD2DEG
+#undef RAD2DEG
+#endif
+
 constexpr float PI = 3.14159265359f;
 constexpr float DEG2RAD = PI / 180.0f;
 constexpr float RAD2DEG = 180.0f / PI;
