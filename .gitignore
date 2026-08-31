@@ -1,0 +1,6 @@
+# Build output
+bin/
+*.o
+*.obj
+*.exe
+.DS_Store

@@ -1,0 +1,22 @@
+{
+    "Material": {
+        "Name": "Sanctuary_Gold",
+        "Shader": "Engine/Shaders/PBR_Deferred.glsl",
+        "BlendMode": "Opaque",
+        "TwoSided": false,
+        "Properties": {
+            "AlbedoColor": [1.0, 0.765, 0.336, 1.0],
+            "Metallic": 0.95,
+            "Roughness": 0.18,
+            "AmbientOcclusion": 1.0,
+            "EmissiveColor": [0.0, 0.0, 0.0, 1.0],
+            "Tiling": [1.0, 1.0]
+        },
+        "Textures": {
+            "AlbedoMap": "Engine/Textures/Gold_Albedo.png",
+            "NormalMap": "Engine/Textures/Gold_Normal.png",
+            "MetallicRoughnessMap": "Engine/Textures/Gold_MR.png",
+            "AOMap": "Engine/Textures/Gold_AO.png"
+        }
+    }
+}
